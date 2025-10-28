@@ -1,0 +1,20 @@
+{
+  "name": "netlogix/jobqueue-pool",
+  "type": "neos-package",
+  "description": "Hold a pool of subprocesses to execute jobs in",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Netlogix\\JobQueue\\Pool\\": "Classes/"
+    }
+  },
+  "require": {
+    "neos/flow": "^5.0 || ^8.0",
+    "react/child-process": "^0.6"
+  },
+  "extra": {
+    "neos": {
+      "package-key": "Netlogix.JobQueue.Pool"
+    }
+  }
+}

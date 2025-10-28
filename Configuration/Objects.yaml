@@ -1,0 +1,9 @@
+Netlogix\JobQueue\Pool\Pool:
+  properties:
+    messageCache:
+      object:
+        factoryObjectName: Neos\Flow\Cache\CacheManager
+        factoryMethodName: getCache
+        arguments:
+          1:
+            value: FlowPackJobQueueCommon_MessageCache
