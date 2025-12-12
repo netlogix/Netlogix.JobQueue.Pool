@@ -9,6 +9,7 @@
     }
   },
   "require": {
+    "php": "^8.3",
     "neos/flow": "^5.0 || ^8.0",
     "react/child-process": "^0.6"
   },
