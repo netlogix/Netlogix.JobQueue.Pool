@@ -7,6 +7,7 @@ namespace Netlogix\JobQueue\Pool;
 use Countable;
 use Flowpack\JobQueue\Common\Job\JobInterface;
 use Flowpack\JobQueue\Common\Queue\Message;
+use InvalidArgumentException;
 use Neos\Cache\Frontend\VariableFrontend;
 use Neos\Flow\Configuration\ConfigurationManager;
 use Neos\Flow\Utility\Algorithms;
@@ -27,6 +28,13 @@ class Pool implements Countable
     public const string EVENT_ERROR = 'error';
     public const string EVENT_SUCCESS = 'success';
     public const string EVENT_EXIT = 'exit';
+
+    /**
+     * How often (in seconds) ReactPHP polls each child process for its exit status.
+     * Matches ReactPHP's own default. A more aggressive value spins the event loop
+     * at a high frequency per child while jobs run, which is a major source of CPU load.
+     */
+    public const float DEFAULT_CHILD_PROCESS_POLL_INTERVAL = 0.1;
 
     protected ConfigurationManager $configurationManager;
 
@@ -62,8 +70,12 @@ class Pool implements Countable
         public readonly bool $async,
         public readonly int $preforkSize,
         public readonly ?string $command,
-        public readonly LoopInterface $eventLoop
+        public readonly LoopInterface $eventLoop,
+        public readonly float $childProcessPollInterval = self::DEFAULT_CHILD_PROCESS_POLL_INTERVAL
     ) {
+        if ($this->childProcessPollInterval <= 0) {
+            throw new InvalidArgumentException('childProcessPollInterval must be greater than 0', 1781800665);
+        }
         $this->fillPool(size: $this->preforkSize);
     }
 
@@ -73,7 +85,8 @@ class Pool implements Countable
         bool $async = false,
         int $preforkSize = 0,
         ?string $command = null,
-        ?LoopInterface $eventLoop = null
+        ?LoopInterface $eventLoop = null,
+        float $childProcessPollInterval = self::DEFAULT_CHILD_PROCESS_POLL_INTERVAL
     ): self {
         return new static(
             $queueName,
@@ -81,7 +94,8 @@ class Pool implements Countable
             $async,
             max($preforkSize, 0),
             $command,
-            $eventLoop ?? Loop::get()
+            $eventLoop ?? Loop::get(),
+            $childProcessPollInterval
         );
     }
 
@@ -187,10 +201,10 @@ class Pool implements Countable
     private function passQueueNameToWorker(Process $process, ?string $queueName): void
     {
         if ($this->queueName === null && $queueName === null) {
-            throw new \InvalidArgumentException('No queue name provided', 1761228530);
+            throw new InvalidArgumentException('No queue name provided', 1761228530);
         }
         if ($this->queueName !== null && $queueName !== null && $this->queueName !== $queueName) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Cannot run job for queue ' . $queueName . ' in queue ' . $this->queueName, 1761228561
             );
         }
@@ -233,7 +247,7 @@ class Pool implements Countable
         $process = (new ProcessFactory($this->command))->build(
             withOutputStreams: $this->outputResults || !$this->async
         );
-        $process->start(loop: $this->eventLoop, interval: 0.01);
+        $process->start(loop: $this->eventLoop, interval: $this->childProcessPollInterval);
         return $process;
     }
 }
