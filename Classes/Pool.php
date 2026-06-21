@@ -158,19 +158,9 @@ class Pool implements Countable
         if (!$this->outputResults) {
             return;
         }
-        $fputs = function ($stream, $data) {
-            // FIXME: Find a better way to filter out the first two lines of stdout
-            switch ($data) {
-                case 'Please specify the required argument "queue": ':
-                case 'Please specify the required argument "messageCacheIdentifier": ':
-                    return null;
-                default:
-                    file_put_contents($stream, $data);
-            }
-        };
         // "php://output" allows for PHP output buffering, \STDOUT does not. Mandatory for testing.
-        $process->stdout->on('data', fn ($chunk) => $fputs('php://output', $chunk));
-        $process->stderr->on('data', fn ($chunk) => $fputs('php://stderr', $chunk));
+        $process->stdout->on('data', fn ($chunk) => file_put_contents('php://output', $chunk));
+        $process->stderr->on('data', fn ($chunk) => file_put_contents('php://stderr', $chunk));
     }
 
     private function setupResultEvents(Process $process)
